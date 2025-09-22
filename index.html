@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4-Page Greeting Card Editor</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .editor {
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card-container {
+    width: 400px;
+    height: 600px;
+    border: 2px solid #333;
+    position: relative;
+    overflow: hidden;
+    background-image: url("images/online-greeting-card-background-template-design-5cdce86655eed31b371eaed773a4fd32_screen.jpg");
+  }
+
+  .card-text, .card-image {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    cursor: move;
+    user-select: none;
+  }
+
+  .card-image {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  input, select, textarea, button {
+    width: 100%;
+    padding: 5px;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  .page-buttons {
+    display: flex;
+    gap: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="editor">
+  <h2>Greeting Card Editor</h2>
+
+ 
+  <div class="page-buttons">
+    <button onclick="switchPage(0)">Page 1</button>
+    <button onclick="switchPage(1)">Page 2</button>
+    <button onclick="switchPage(2)">Page 3</button>
+    <button onclick="switchPage(3)">Page 4</button>
+  </div>
+
+  
+  <label>Text:</label>
+  <textarea id="text-input" rows="3" placeholder="Enter your message"></textarea>
+  <textarea id="text-input" rows="3" placeholder="Enter your message"></textarea>
+  
+  <label>Font Family:</label>
+  <select id="font-family">
+    <option value="Arial">Arial</option>
+    <option value="Verdana">Verdana</option>
+    <option value="Georgia">Georgia</option>
+  </select>
+
+  <label>Font Size (px):</label>
+  <input type="number" id="font-size" value="24">
+
+  <label>Text Color:</label>
+  <input type="color" id="text-color" value="#000000">
+
+  <label>Upload Image:</label>
+  <input type="file" id="image-upload" accept="image/*">
+</div>
+
+<div class="card-container" id="card"></div>
+
+<script>
+const card = document.getElementById('card');
+const textInput = document.getElementById('text-input');
+const fontFamily = document.getElementById('font-family');
+const fontSize = document.getElementById('font-size');
+const textColor = document.getElementById('text-color');
+const bgColor = document.getElementById('bg-color');
+const imageUpload = document.getElementById('image-upload');
+
+
+let pages = [
+  { text: '', textStyle: {}, images: [], bg: '#f5f5f5' },
+  { text: '', textStyle: {}, images: [], bg: '#f5f5f5' },
+  { text: '', textStyle: {}, images: [], bg: '#f5f5f5' },
+  { text: '', textStyle: {}, images: [], bg: '#f5f5f5' }
+];
+
+let currentPage = 0;
+
+
+function switchPage(index) {
+  currentPage = index;
+  const page = pages[currentPage];
+  card.innerHTML = ''; // Clear previous content
+
+
+  card.style.backgroundColor = page.bg;
+
+
+  if (page.text) {
+    const tEl = document.createElement('div');
+    tEl.classList.add('card-text');
+    tEl.textContent = page.text;
+    Object.assign(tEl.style, page.textStyle);
+    card.appendChild(tEl);
+    makeDraggable(tEl, page.textStyle);
+  }
+
+
+  page.images.forEach(img => {
+    const iEl = document.createElement('img');
+    iEl.classList.add('card-image');
+    iEl.src = img.src;
+    iEl.style.left = img.left;
+    iEl.style.top = img.top;
+    card.appendChild(iEl);
+    makeDraggable(iEl, img);
+  });
+
+  
+  textInput.value = page.text;
+  fontFamily.value = page.textStyle.fontFamily || 'Arial';
+  fontSize.value = parseInt(page.textStyle.fontSize) || 24;
+  textColor.value = page.textStyle.color || '#000000';
+  bgColor.value = page.bg;
+}
+
+
+function makeDraggable(el, dataObj) {
+  let dragging = false, offsetX, offsetY;
+
+  el.addEventListener('mousedown', (e) => {
+    dragging = true;
+    offsetX = e.offsetX;
+    offsetY = e.offsetY;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const rect = card.getBoundingClientRect();
+    let left = e.clientX - rect.left - offsetX;
+    let top = e.clientY - rect.top - offsetY;
+    left = Math.max(0, Math.min(left, card.offsetWidth - el.offsetWidth));
+    top = Math.max(0, Math.min(top, card.offsetHeight - el.offsetHeight));
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    if (dataObj) { dataObj.left = el.style.left; dataObj.top = el.style.top; }
+  });
+
+  document.addEventListener('mouseup', () => dragging = false);
+}
+
+
+textInput.addEventListener('input', () => {
+  const page = pages[currentPage];
+  page.text = textInput.value;
+
+  let tEl = card.querySelector('.card-text');
+  if (!tEl && page.text) {
+    tEl = document.createElement('div');
+    tEl.classList.add('card-text');
+    tEl.style.left = '50px';
+    tEl.style.top = '50px';
+    card.appendChild(tEl);
+    makeDraggable(tEl, page.textStyle);
+  }
+  tEl.textContent = page.text;
+});
+
+
+function updateTextStyle() {
+  const page = pages[currentPage];
+  page.textStyle = {
+    fontFamily: fontFamily.value,
+    fontSize: fontSize.value + 'px',
+    color: textColor.value
+  };
+  const tEl = card.querySelector('.card-text');
+  if (tEl) Object.assign(tEl.style, page.textStyle);
+}
+
+fontFamily.addEventListener('change', updateTextStyle);
+fontSize.addEventListener('input', updateTextStyle);
+textColor.addEventListener('input', updateTextStyle);
+
+
+bgColor.addEventListener('input', () => {
+  const page = pages[currentPage];
+  page.bg = bgColor.value;
+  card.style.backgroundColor = page.bg;
+});
+
+
+imageUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const imgObj = { src: event.target.result, left: '50px', top: '50px' };
+    pages[currentPage].images.push(imgObj);
+    const iEl = document.createElement('img');
+    iEl.classList.add('card-image');
+    iEl.src = imgObj.src;
+    iEl.style.left = imgObj.left;
+    iEl.style.top = imgObj.top;
+    card.appendChild(iEl);
+    makeDraggable(iEl, imgObj);
+  };
+  reader.readAsDataURL(file);
+});
+
+
+switchPage(0);
+</script>
+
+</body>
+</html>
